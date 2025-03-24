@@ -16,10 +16,10 @@ local Window = Rayfield:CreateWindow({
    },
    KeySystem = true, -- Aktifkan sistem kunci
    KeySettings = {
-      Title = "Key | Youtube Hub",
+      Title = "Key | ReyLightHub",
       Subtitle = "Key System",
-      Note = "Key In Discord Server",
-      FileName = "YoutubeHubKey1", -- Pastikan nama fail unik supaya tidak ditimpa oleh skrip lain
+      Note = "Key In Discord Server (https://discord.gg/https://b9NuzjaRtv",
+      FileName = "ReyHubKey1", -- Pastikan nama fail unik supaya tidak ditimpa oleh skrip lain
       SaveKey = false, -- Jika false, pemain perlu memasukkan semula kunci jika ia berubah
       Key = {"ReyLucky2025"} -- Senarai kunci yang diterima
    }
