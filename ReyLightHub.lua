@@ -15,6 +15,10 @@ local Window = Rayfield:CreateWindow({
 local MainTab = Window:CreateTab("Main", nil)
 local MainSection = MainTab:CreateSection("Main Features")
 
+-- === AUTO FARM ===
+local AutoFarmTab = Window:CreateTab("Auto Farm", nil)
+local AutoFarmSection = AutoFarmTab:CreateSection("Auto Farm Features")
+
 -- Auto Shoot
 local ToggleAutoShoot = MainTab:CreateToggle({
    Name = "Auto Shoot",
@@ -232,7 +236,7 @@ for _, style in ipairs(styles) do
 end
 
 -- === STOP ROLLING BUTTON ===
-local stopButton = Styles:CreateButton({
+local stopButton = StylesTab:CreateButton({
    Name = "Stop Rolls",
    Callback = function()
        stopRolling = true
@@ -240,7 +244,7 @@ local stopButton = Styles:CreateButton({
 })
 
 -- === LEGENDARY+ PROTECTION TOGGLE ===
-local ToggleLegendaryProtection = Styles:CreateToggle({
+local ToggleLegendaryProtection = StylesTab:CreateToggle({
    Name = "Legendary+ Protection",
    CurrentValue = false,
    Flag = "LegendaryProtection",
@@ -248,10 +252,6 @@ local ToggleLegendaryProtection = Styles:CreateToggle({
        legendaryProtection = Value
    end
 })
-
--- === AUTO FARM ===
-local AutoFarmTab = Window:CreateTab("Auto Farm", nil)
-local AutoFarmSection = AutoFarmTab:CreateSection("Auto Farm Features")
 
 local ToggleAutoGK = AutoFarmTab:CreateToggle({
     Name = "Auto GK",
