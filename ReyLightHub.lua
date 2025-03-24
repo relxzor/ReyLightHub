@@ -1,146 +1,57 @@
--- Load Rayfield UI Library
-local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
+-- Load Kavo UI Library
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("ReyLightHub | Blue Lock Rivals", "DarkTheme")
 
--- Create UI Window
-local Window = Rayfield:CreateWindow({
-    Name = "Blue Lock Rivals | Script",
-    LoadingTitle = "Loading...",
-    LoadingSubtitle = "Please wait...",
-    ConfigurationSaving = {Enabled = false},
-    Discord = {Enabled = false},
-    KeySystem = false
-})
+-- UI Animation Effect
+local TweenService = game:GetService("TweenService")
+local UI = Window.MainFrame
+UI.Position = UDim2.new(0.5, 0, -1, 0)
+local Tween = TweenService:Create(UI, TweenInfo.new(1, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, 0, 0.5, 0)})
+Tween:Play()
 
--- Tab utama untuk fitur
-local MainTab = Window:CreateTab("Main Features", 4483362458)
+-- Main Tab
+local MainTab = Window:NewTab("Main Features")
+local MainSection = MainTab:NewSection("Premium Features")
 
--- Section Auto Dribble
-local DribbleSection = MainTab:CreateSection("Auto Dribble")
-
--- Toggle untuk mengaktifkan / menonaktifkan Auto Dribble
-local AutoDribbleToggle = MainTab:CreateToggle({
-    Name = "Enable Auto Dribble",
-    CurrentValue = true,
-    Callback = function(state)
-        getgenv().AutoDribbleSettings.Enabled = state
+-- Auto Dribble
+MainSection:NewToggle("Auto Dribble", "Automatically dribble when the ball is at your feet", function(state)
+    getgenv().AutoDribble = state
+    while getgenv().AutoDribble do
+        pcall(function()
+            game:GetService("ReplicatedStorage").Packages.Knit.Services.BallService.RE.Dribble:FireServer()
+        end)
+        wait(0.5)
     end
-})
-
--- Slider untuk mengatur jarak dribble
-MainTab:CreateSlider({
-    Name = "Dribble Range",
-    Range = {10, 30},
-    Increment = 1,
-    CurrentValue = 22,
-    Callback = function(value)
-        getgenv().AutoDribbleSettings.range = value
-    end
-})
-
--- UI untuk Auto AFK
-local AFKSection = MainTab:CreateSection("Anti-AFK")
-
--- Toggle untuk mengaktifkan Anti-AFK
-local AFKToggle = MainTab:CreateToggle({
-    Name = "Enable Anti-AFK",
-    CurrentValue = false,
-    Callback = function(state)
-        getgenv().afk_toggle = state
-    end
-})
-
--- Tombol untuk menutup UI
-MainTab:CreateButton({
-    Name = "Close UI",
-    Callback = function()
-        Window:Destroy()
-    end
-})
-
-----------------------------
--- SCRIPT AUTO DRIBBLE
-----------------------------
-if not getgenv().AutoDribbleSettings then
-    getgenv().AutoDribbleSettings = {Enabled = true, range = 22}
-end
-
-local S, R, P, U = getgenv().AutoDribbleSettings, game:GetService("ReplicatedStorage"), game:GetService("Players"), game:GetService("RunService")
-local L = P.LocalPlayer or P.PlayerAdded:Wait()
-
-local function initCharacter()
-    local C = L.Character or L.CharacterAdded:Wait()
-    local H = C:WaitForChild("HumanoidRootPart")
-    local M = C:WaitForChild("Humanoid")
-    return C, H, M
-end
-
-local C, H, M = initCharacter()
-L.CharacterAdded:Connect(function(newChar)
-    C, H, M = initCharacter()
 end)
 
-local B = R.Packages.Knit.Services.BallService.RE.Dribble
-local A = require(R.Assets.Animations)
+-- Speed Hack
+MainSection:NewSlider("Speed Hack", "Increase movement speed", 100, 16, function(s)
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = s
+end)
 
-local function G(s)
-    if not A.Dribbles[s] then return nil end
-    local I = Instance.new("Animation")
-    I.AnimationId = A.Dribbles[s]
-    return M and M:LoadAnimation(I)
-end
-
-local function T(p)
-    if p == L then return false end
-    local c = p.Character
-    if not c then return false end
-    local V = c.Values and c.Values.Sliding
-    if V and V.Value == true then return true end
-    local h = c:FindFirstChildOfClass("Humanoid")
-    if h and h.MoveDirection.Magnitude > 0 and h.WalkSpeed == 0 then return true end
-    return false
-end
-
-local function O(p)
-    if not L.Team or not p.Team then return false end
-    return L.Team ~= p.Team
-end
-
-local function D(d)
-    if not S.Enabled or not C.Values.HasBall.Value then return end
-    B:FireServer()
-    local s = L.PlayerStats.Style.Value
-    local t = G(s)
-    if t then t:Play(); t:AdjustSpeed(math.clamp(1 + (10 - d) / 10, 1, 2)) end
-    local F = workspace:FindFirstChild("Football")
-    if F then F.AssemblyLinearVelocity = Vector3.new(); F.CFrame = C.HumanoidRootPart.CFrame * CFrame.new(0, -2.5, 0) end
-end
-
-U.Heartbeat:Connect(function()
-    if not S.Enabled or not C or not H then return end
-    for _, p in pairs(P:GetPlayers()) do
-        if O(p) and T(p) then
-            local r = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-            if r then
-                local d = (r.Position - H.Position).Magnitude
-                if d < S.range then
-                    D(d)
-                    break
-                end
-            end
+-- Infinite Jump
+MainSection:NewToggle("Infinite Jump", "Jump infinitely without restrictions", function(state)
+    getgenv().InfiniteJump = state
+    game:GetService("UserInputService").JumpRequest:Connect(function()
+        if getgenv().InfiniteJump then
+            game.Players.LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
         end
-    end
+    end)
 end)
 
-----------------------------
--- SCRIPT ANTI-AFK
-----------------------------
-local VirtualUser = game:GetService("VirtualUser")
-local plr = game:GetService("Players").LocalPlayer
-
-plr.Idled:Connect(function()
-    if not getgenv().afk_toggle then return end
-    pcall(function()
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
+-- Close Button (Minimize UI)
+local ToggleUI = Window:NewTab("Settings"):NewSection("UI Settings")
+ToggleUI:NewButton("Minimize UI", "Hide the interface and show a toggle button", function()
+    UI.Visible = false
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Parent = game.CoreGui
+    ToggleButton.Size = UDim2.new(0, 150, 0, 50)
+    ToggleButton.Position = UDim2.new(0.5, -75, 0.9, 0)
+    ToggleButton.Text = "Show UI"
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.MouseButton1Click:Connect(function()
+        UI.Visible = true
+        ToggleButton:Destroy()
     end)
 end)
