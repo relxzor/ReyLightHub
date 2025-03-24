@@ -8,9 +8,22 @@ local Window = Rayfield:CreateWindow({
       Enabled = false,
       FolderName = nil,
       FileName = "ReyLightHub"
+   },
+   Discord = {
+      Enabled = false,
+      Invite = "https://b9NuzjaRtv", -- Kod jemputan Discord tanpa 'discord.gg/'
+      RememberJoins = true -- Jika false, pemain perlu menyertai semula setiap kali skrip dimuatkan
+   },
+   KeySystem = true, -- Aktifkan sistem kunci
+   KeySettings = {
+      Title = "Key | Youtube Hub",
+      Subtitle = "Key System",
+      Note = "Key In Discord Server",
+      FileName = "YoutubeHubKey1", -- Pastikan nama fail unik supaya tidak ditimpa oleh skrip lain
+      SaveKey = false, -- Jika false, pemain perlu memasukkan semula kunci jika ia berubah
+      Key = {"ReyLucky2025"} -- Senarai kunci yang diterima
    }
 })
-
 -- === MAIN FEATURES ===
 local MainTab = Window:CreateTab("Main", nil)
 local MainSection = MainTab:CreateSection("Main Features")
