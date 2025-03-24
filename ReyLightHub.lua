@@ -16,81 +16,72 @@ local MainTab = Window:CreateTab("Main", nil)
 local MainSection = MainTab:CreateSection("Main Features")
 
 -- Auto Shoot
+local AutoShoot = false
 local ToggleAutoShoot = MainTab:CreateToggle({
    Name = "Auto Shoot",
    CurrentValue = false,
    Flag = "AutoShoot",
-   Callback = function(Value)
-       _G.AutoShoot = Value
-       while _G.AutoShoot do
-           wait(0.1)
-           local plr = game.Players.LocalPlayer
-           local ball = workspace:FindFirstChild("SoccerBall")
-           local goal = workspace:FindFirstChild("Goal")
-
-           if ball and goal then
-               local distance = (plr.Character.HumanoidRootPart.Position - goal.Position).Magnitude
-               if distance < 15 then
-                   ball.Velocity = Vector3.new(0, 50, _G.ShootPower or 50) -- Gunakan nilai Shoot Power
+   Callback = function(state)
+      AutoShoot = state
+      spawn(function()
+         while AutoShoot do
+            wait(1)
+            local player = game.Players.LocalPlayer
+            if player and player.Character then
+               local Ball = game.Workspace:FindFirstChild("Ball")
+               if Ball then
+                  Ball.Velocity = Vector3.new(0, 50, _G.ShootPower or 50)
                end
-           end
-       end
+            end
+         end
+      end)
    end
 })
 
 -- Auto Dribble
+local AutoDribble = false
 local ToggleAutoDribble = MainTab:CreateToggle({
    Name = "Auto Dribble",
    CurrentValue = false,
    Flag = "AutoDribble",
-   Callback = function(Value)
-       _G.AutoDribble = Value
-       while _G.AutoDribble do
-           wait(0.1)
-           local plr = game.Players.LocalPlayer
-           local ball = workspace:FindFirstChild("SoccerBall")
-
-           if ball then
-               ball.Position = plr.Character.HumanoidRootPart.Position + Vector3.new(0, 0, 2)
-           end
-       end
+   Callback = function(state)
+      AutoDribble = state
+      spawn(function()
+         while AutoDribble do
+            wait(0.1)
+            local player = game.Players.LocalPlayer
+            local character = player.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+               character.HumanoidRootPart.Velocity = Vector3.new(20, 0, 20)
+            end
+         end
+      end)
    end
 })
 
 -- Auto Steal Ball
+local AutoSteal = false
 local ToggleAutoSteal = MainTab:CreateToggle({
    Name = "Auto Steal Ball",
    CurrentValue = false,
    Flag = "AutoStealBall",
-   Callback = function(Value)
-       _G.AutoStealBall = Value
-       while _G.AutoStealBall do
-           wait(0.1)
-           local plr = game.Players.LocalPlayer
-           local ball = workspace:FindFirstChild("SoccerBall")
-
-           if ball and (ball.Position - plr.Character.HumanoidRootPart.Position).Magnitude < 5 then
-               ball.Position = plr.Character.HumanoidRootPart.Position -- Ambil bola secara automatik
-           end
-       end
+   Callback = function(state)
+      AutoSteal = state
+      spawn(function()
+         while AutoSteal do
+            wait(0.1)
+            local player = game.Players.LocalPlayer
+            local character = player.Character
+            if character and game.Workspace:FindFirstChild("Ball") then
+               local Ball = game.Workspace.Ball
+               local distance = (character.HumanoidRootPart.Position - Ball.Position).magnitude
+               if distance < 5 then -- Jarak tackle
+                  Ball.Position = character.HumanoidRootPart.Position
+               end
+            end
+         end
+      end)
    end
-})
-
--- Movement Section
-local MovementTab = Window:CreateTab("Movement", nil)
-local MovementSection = MovementTab:CreateSection("Speed Control")
-
--- Speed Hack
-local SliderSpeed = MovementTab:CreateSlider({
-   Name = "Speed Hack",
-   Range = {16, 100},
-   Increment = 1,
-   Suffix = "Speed",
-   CurrentValue = 16,
-   Flag = "SpeedHack",
-   Callback = function(Value)
-       game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
-   end,
 })
 
 -- Shooting Section
@@ -106,8 +97,8 @@ local SliderPowerShoot = ShootingTab:CreateSlider({
    CurrentValue = 50,
    Flag = "PowerShoot",
    Callback = function(Value)
-       _G.ShootPower = Value
-   end,
+      _G.ShootPower = Value
+   end
 })
 
 -- ESP Section
@@ -115,48 +106,78 @@ local ESPTab = Window:CreateTab("ESP", nil)
 local ESPSection = ESPTab:CreateSection("ESP Features")
 
 -- Ball ESP
+local _G.BallESP = false
 local ToggleBallESP = ESPTab:CreateToggle({
    Name = "Ball ESP",
    CurrentValue = false,
    Flag = "BallESP",
-   Callback = function(Value)
-       _G.BallESP = Value
-       while _G.BallESP do
-           wait(0.1)
-           local ball = workspace:FindFirstChild("SoccerBall")
+   Callback = function(state)
+      _G.BallESP = state
+      spawn(function()
+         while _G.BallESP do
+            wait(0.1)
+            local ball = workspace:FindFirstChild("SoccerBall")
 
-           if ball then
+            if ball then
                local highlight = ball:FindFirstChild("ESP") or Instance.new("Highlight")
                highlight.Name = "ESP"
                highlight.FillColor = Color3.fromRGB(255, 255, 0) -- Kuning
                highlight.OutlineColor = Color3.fromRGB(255, 255, 0)
                highlight.Adornee = ball
                highlight.Parent = ball
-           end
-       end
+            end
+         end
+      end)
    end
 })
 
--- Player ESP untuk semua pemain di server
+-- Player ESP untuk semua pemain kecuali diri sendiri
+local _G.PlayerESP = false
 local TogglePlayerESP = ESPTab:CreateToggle({
-   Name = "Player ESP (Semua Pemain)",
+   Name = "Player ESP",
    CurrentValue = false,
    Flag = "PlayerESP",
-   Callback = function(Value)
-       _G.PlayerESP = Value
-       while _G.PlayerESP do
-           wait(0.1)
-           for _, player in pairs(game.Players:GetPlayers()) do
-               if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                   local char = player.Character
-                   local highlight = char:FindFirstChild("ESP") or Instance.new("Highlight")
-                   highlight.Name = "ESP"
-                   highlight.FillColor = Color3.fromRGB(0, 255, 0) -- Hijau
-                   highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                   highlight.Adornee = char
-                   highlight.Parent = char
+   Callback = function(state)
+      _G.PlayerESP = state
+      spawn(function()
+         while _G.PlayerESP do
+            wait(0.1)
+            for _, player in pairs(game.Players:GetPlayers()) do
+               if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                  local char = player.Character
+                  local highlight = char:FindFirstChild("ESP") or Instance.new("Highlight")
+                  highlight.Name = "ESP"
+                  highlight.FillColor = Color3.fromRGB(0, 255, 0) -- Hijau
+                  highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                  highlight.Adornee = char
+                  highlight.Parent = char
                end
-           end
-       end
+            end
+         end
+      end)
+   end
+})
+
+-- Hitbox untuk semua pemain kecuali diri sendiri
+local _G.Hitbox = false
+local ToggleHitbox = ESPTab:CreateToggle({
+   Name = "Player Hitbox",
+   CurrentValue = false,
+   Flag = "Hitbox",
+   Callback = function(state)
+      _G.Hitbox = state
+      spawn(function()
+         while _G.Hitbox do
+            wait(0.1)
+            for _, player in pairs(game.Players:GetPlayers()) do
+               if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                  local hrp = player.Character.HumanoidRootPart
+                  hrp.Size = Vector3.new(10, 10, 10) -- Besarkan hitbox
+                  hrp.Transparency = 0.5 -- Biar nampak tapi separuh lutsinar
+                  hrp.Material = Enum.Material.Neon -- Beri efek neon
+               end
+            end
+         end
+      end)
    end
 })
