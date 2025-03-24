@@ -3,59 +3,65 @@ local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shle
 
 -- Create UI Window
 local Window = Rayfield:CreateWindow({
-    Name = "ReyLightHub - Blue Lock Rivals",
-    LoadingTitle = "Loading ReyLightHub...",
-    LoadingSubtitle = "Developed by Developer",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "ReyLightHubConfig"
-    },
+    Name = "Blue Lock Rivals | Script",
+    LoadingTitle = "Loading...",
+    LoadingSubtitle = "Please wait...",
+    ConfigurationSaving = {Enabled = false},
+    Discord = {Enabled = false},
     KeySystem = false
 })
 
--- Background Particle Effect
-local function CreateParticles()
-    local ParticleEffect = Instance.new("ParticleEmitter")
-    ParticleEffect.Parent = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    ParticleEffect.Texture = "rbxassetid://1095708"  -- Ganti jika diperlukan
-    ParticleEffect.Rate = 10
-    ParticleEffect.Lifetime = NumberRange.new(2, 5)
-    ParticleEffect.Speed = NumberRange.new(2, 5)
-    ParticleEffect.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0)})
-    ParticleEffect.Color = ColorSequence.new(Color3.fromRGB(0, 162, 255))
-end
+-- Tab utama untuk fitur
+local MainTab = Window:CreateTab("Main Features", 4483362458)
 
-CreateParticles()
+-- Section Auto Dribble
+local DribbleSection = MainTab:CreateSection("Auto Dribble")
 
--- UI Toggle Button
-local UIVisible = true
-local UIContainer = Window:GetContainer()
-local ToggleButton = Instance.new("TextButton")
+-- Toggle untuk mengaktifkan / menonaktifkan Auto Dribble
+local AutoDribbleToggle = MainTab:CreateToggle({
+    Name = "Enable Auto Dribble",
+    CurrentValue = true,
+    Callback = function(state)
+        getgenv().AutoDribbleSettings.Enabled = state
+    end
+})
 
-ToggleButton.Parent = game.CoreGui
-ToggleButton.Size = UDim2.new(0, 50, 0, 50)
-ToggleButton.Position = UDim2.new(0.9, 0, 0.05, 0)
-ToggleButton.Text = "❌"
-ToggleButton.TextScaled = true
-ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+-- Slider untuk mengatur jarak dribble
+MainTab:CreateSlider({
+    Name = "Dribble Range",
+    Range = {10, 30},
+    Increment = 1,
+    CurrentValue = 22,
+    Callback = function(value)
+        getgenv().AutoDribbleSettings.range = value
+    end
+})
 
-ToggleButton.MouseButton1Click:Connect(function()
-    UIVisible = not UIVisible
-    UIContainer.Visible = UIVisible
-    ToggleButton.Text = UIVisible and "❌" or "◻️"
-    ToggleButton.BackgroundColor3 = UIVisible and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(50, 255, 50)
-end)
+-- UI untuk Auto AFK
+local AFKSection = MainTab:CreateSection("Anti-AFK")
 
--- Main Tab
-local MainTab = Window:CreateTab("Main Features")
+-- Toggle untuk mengaktifkan Anti-AFK
+local AFKToggle = MainTab:CreateToggle({
+    Name = "Enable Anti-AFK",
+    CurrentValue = false,
+    Callback = function(state)
+        getgenv().afk_toggle = state
+    end
+})
 
--- Auto Dribble Settings
+-- Tombol untuk menutup UI
+MainTab:CreateButton({
+    Name = "Close UI",
+    Callback = function()
+        Window:Destroy()
+    end
+})
+
+----------------------------
+-- SCRIPT AUTO DRIBBLE
+----------------------------
 if not getgenv().AutoDribbleSettings then
-    getgenv().AutoDribbleSettings = {
-        Enabled = true,
-        range = 22
-    }
+    getgenv().AutoDribbleSettings = {Enabled = true, range = 22}
 end
 
 local S, R, P, U = getgenv().AutoDribbleSettings, game:GetService("ReplicatedStorage"), game:GetService("Players"), game:GetService("RunService")
@@ -75,6 +81,7 @@ end)
 
 local B = R.Packages.Knit.Services.BallService.RE.Dribble
 local A = require(R.Assets.Animations)
+
 local function G(s)
     if not A.Dribbles[s] then return nil end
     local I = Instance.new("Animation")
@@ -103,15 +110,9 @@ local function D(d)
     B:FireServer()
     local s = L.PlayerStats.Style.Value
     local t = G(s)
-    if t then
-        t:Play()
-        t:AdjustSpeed(math.clamp(1 + (10 - d) / 10, 1, 2))
-    end
+    if t then t:Play(); t:AdjustSpeed(math.clamp(1 + (10 - d) / 10, 1, 2)) end
     local F = workspace:FindFirstChild("Football")
-    if F then
-        F.AssemblyLinearVelocity = Vector3.new()
-        F.CFrame = C.HumanoidRootPart.CFrame * CFrame.new(0, -2.5, 0)
-    end
+    if F then F.AssemblyLinearVelocity = Vector3.new(); F.CFrame = C.HumanoidRootPart.CFrame * CFrame.new(0, -2.5, 0) end
 end
 
 U.Heartbeat:Connect(function()
@@ -130,35 +131,16 @@ U.Heartbeat:Connect(function()
     end
 end)
 
--- Toggle Auto Dribble
-MainTab:CreateToggle({
-    Name = "Auto Dribble",
-    CurrentValue = getgenv().AutoDribbleSettings.Enabled,
-    Callback = function(state)
-        getgenv().AutoDribbleSettings.Enabled = state
-    end
-})
+----------------------------
+-- SCRIPT ANTI-AFK
+----------------------------
+local VirtualUser = game:GetService("VirtualUser")
+local plr = game:GetService("Players").LocalPlayer
 
--- Dribble Range Slider
-MainTab:CreateSlider({
-    Name = "Dribble Range",
-    Range = {10, 30},
-    Increment = 1,
-    CurrentValue = getgenv().AutoDribbleSettings.range,
-    Callback = function(value)
-        getgenv().AutoDribbleSettings.range = value
-    end
-})
-
--- Notification
-Rayfield:Notify({
-    Title = "ReyLightHub",
-    Content = "Auto Dribble successfully loaded!",
-    Duration = 5,
-    Actions = {
-        Ignore = {
-            Name = "OK",
-            Callback = function() end
-        }
-    }
-})
+plr.Idled:Connect(function()
+    if not getgenv().afk_toggle then return end
+    pcall(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end)
+end)
