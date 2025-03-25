@@ -9,11 +9,7 @@ local Window = Rayfield:CreateWindow({
       Enabled = false,
       FolderName = "ReyLightHub",
       FileName = "Config"
-   },
-      Enabled = false,
-      Invite = "https://b9NuzjaRtv", -- Kod jemputan Discord tanpa 'discord.gg/'
-      RememberJoins = true -- Jika false, pemain perlu menyertai semula setiap kali skrip dimuatkan
-   },
+      },
    KeySystem = true, -- Aktifkan sistem kunci
    KeySettings = {
       Title = "Key | ReyLightHub",
