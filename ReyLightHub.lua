@@ -54,100 +54,115 @@ local ToggleAutoShoot = MainTab:CreateToggle({
    end
 })
 
--- Auto Dribble
+-- AUTO DRIBBLE
 local ToggleAutoDribble = MainTab:CreateToggle({
     Name = "Auto Dribble",
     CurrentValue = false,
     Flag = "AutoDribble",
     Callback = function(Value)
-        _G.AutoDribble = Value
-        if _G.AutoDribble then
-            if not getgenv().AutoDribbleSettings then
-                getgenv().AutoDribbleSettings = {
-                    Enabled = true,
-                    range = 22
-                }
-            end
+        local success, err = pcall(function()
+            _G.AutoDribble = Value
 
-            local S, R, P, U = getgenv().AutoDribbleSettings, game:GetService("ReplicatedStorage"), game:GetService("Players"), game:GetService("RunService")
-            local L = P.LocalPlayer or P.PlayerAdded:Wait()
-            
-            local function initCharacter()
-                local C = L.Character or L.CharacterAdded:Wait()
-                local H = C:WaitForChild("HumanoidRootPart")
-                local M = C:WaitForChild("Humanoid")
-                return C, H, M
-            end
+            if _G.AutoDribble then
+                if _G.AutoDribbleRunning then return end -- Elakkan berulang kali aktif
+                _G.AutoDribbleRunning = true
 
-            local C, H, M = initCharacter()
-            L.CharacterAdded:Connect(function(newChar)
-                C, H, M = initCharacter()
-            end)
-
-            local B = R.Packages.Knit.Services.BallService.RE.Dribble
-            local A = require(R.Assets.Animations)
-
-            local function getDribbleAnim(s)
-                if not A.Dribbles[s] then return nil end
-                local I = Instance.new("Animation")
-                I.AnimationId = A.Dribbles[s]
-                return M and M:LoadAnimation(I)
-            end
-
-            local function isSlidingOrFrozen(p)
-                if p == L then return false end
-                local c = p.Character
-                if not c then return false end
-                local V = c.Values and c.Values.Sliding
-                if V and V.Value == true then return true end
-                local h = c:FindFirstChildOfClass("Humanoid")
-                return h and h.MoveDirection.Magnitude > 0 and h.WalkSpeed == 0
-            end
-
-            local function isEnemy(p)
-                if not L.Team or not p.Team then return false end
-                return L.Team ~= p.Team
-            end
-
-            local function autoDribble(d)
-                if not S.Enabled or not C.Values.HasBall.Value then return end
-                B:FireServer()
-                local s = L.PlayerStats.Style.Value
-                local t = getDribbleAnim(s)
-                if t then
-                    t:Play()
-                    t:AdjustSpeed(math.clamp(1 + (10 - d) / 10, 1, 2))
+                if not getgenv().AutoDribbleSettings then
+                    getgenv().AutoDribbleSettings = {
+                        Enabled = true,
+                        range = 22
+                    }
                 end
-                local F = workspace:FindFirstChild("Football")
-                if F then
-                    F.AssemblyLinearVelocity = Vector3.new()
-                    F.CFrame = C.HumanoidRootPart.CFrame * CFrame.new(0, -2.5, 0)
+
+                local S, R, P, U = getgenv().AutoDribbleSettings, game:GetService("ReplicatedStorage"), game:GetService("Players"), game:GetService("RunService")
+                local L = P.LocalPlayer or P.PlayerAdded:Wait()
+                
+                local function initCharacter()
+                    local C = L.Character or L.CharacterAdded:Wait()
+                    if not C then return nil, nil, nil end
+                    local H = C:FindFirstChild("HumanoidRootPart")
+                    local M = C:FindFirstChild("Humanoid")
+                    return C, H, M
                 end
-            end
 
-            -- Pastikan tiada duplikasi sambungan ke Heartbeat
-            if _G.DribbleConnection then _G.DribbleConnection:Disconnect() end
+                local C, H, M = initCharacter()
+                L.CharacterAdded:Connect(function(newChar)
+                    C, H, M = initCharacter()
+                end)
 
-            _G.DribbleConnection = U.Heartbeat:Connect(function()
-                if not S.Enabled or not C or not H then return end
-                for _, p in pairs(P:GetPlayers()) do
-                    if isEnemy(p) and isSlidingOrFrozen(p) then
-                        local r = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-                        if r then
-                            local d = (r.Position - H.Position).Magnitude
-                            if d < S.range then
-                                autoDribble(d)
-                                break
-                            end
-                        end
+                local B = R:WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("BallService"):WaitForChild("RE"):WaitForChild("Dribble")
+                local A = require(R:WaitForChild("Assets"):WaitForChild("Animations"))
+
+                local function getDribbleAnim(s)
+                    if not A.Dribbles[s] then return nil end
+                    local I = Instance.new("Animation")
+                    I.AnimationId = A.Dribbles[s]
+                    return M and M:LoadAnimation(I)
+                end
+
+                local function isSlidingOrFrozen(p)
+                    if p == L then return false end
+                    local c = p.Character
+                    if not c then return false end
+                    local V = c:FindFirstChild("Values") and c.Values:FindFirstChild("Sliding")
+                    if V and V.Value == true then return true end
+                    local h = c:FindFirstChildOfClass("Humanoid")
+                    return h and h.MoveDirection.Magnitude > 0 and h.WalkSpeed == 0
+                end
+
+                local function isEnemy(p)
+                    if not L.Team or not p.Team then return false end
+                    return L.Team ~= p.Team
+                end
+
+                local function autoDribble(d)
+                    if not S.Enabled or not C or not C:FindFirstChild("Values") or not C.Values:FindFirstChild("HasBall") then return end
+                    if not C.Values.HasBall.Value then return end
+                    B:FireServer()
+                    local s = L:FindFirstChild("PlayerStats") and L.PlayerStats:FindFirstChild("Style") and L.PlayerStats.Style.Value
+                    local t = getDribbleAnim(s)
+                    if t then
+                        t:Play()
+                        t:AdjustSpeed(math.clamp(1 + (10 - d) / 10, 1, 2))
+                    end
+                    local F = workspace:FindFirstChild("Football")
+                    if F then
+                        F.AssemblyLinearVelocity = Vector3.new()
+                        F.CFrame = C.HumanoidRootPart.CFrame * CFrame.new(0, -2.5, 0)
                     end
                 end
-            end)
-        else
-            if _G.DribbleConnection then
-                _G.DribbleConnection:Disconnect()
-                _G.DribbleConnection = nil
+
+                -- Pastikan tiada duplikasi sambungan ke Heartbeat
+                if _G.DribbleConnection then _G.DribbleConnection:Disconnect() end
+
+                _G.DribbleConnection = U.Heartbeat:Connect(function()
+                    task.spawn(function() -- Elakkan UI freeze
+                        if not S.Enabled or not C or not H then return end
+                        for _, p in pairs(P:GetPlayers()) do
+                            if isEnemy(p) and isSlidingOrFrozen(p) then
+                                local r = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                                if r then
+                                    local d = (r.Position - H.Position).Magnitude
+                                    if d < S.range then
+                                        autoDribble(d)
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end)
+                end)
+            else
+                if _G.DribbleConnection then
+                    _G.DribbleConnection:Disconnect()
+                    _G.DribbleConnection = nil
+                end
+                _G.AutoDribbleRunning = false
             end
+        end)
+
+        if not success then
+            warn("Auto Dribble Error: " .. tostring(err))
         end
     end
 })
