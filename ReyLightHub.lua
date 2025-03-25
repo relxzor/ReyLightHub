@@ -16,7 +16,7 @@ local Window = Rayfield:CreateWindow({
       Note = "Key In Discord Server (https://discord.gg/b9NuzjaRtv)",
       FileName = "ReyHubKey",
       SaveKey = false,
-      Key = {"ReyLucky2025"}
+      Key = {"ReyZzz"}
    }
 -- Tabs
 local MainTab = Window:CreateTab("Main", nil)
