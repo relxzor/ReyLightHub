@@ -18,8 +18,6 @@ local Window = Rayfield:CreateWindow({
       SaveKey = false,
       Key = {"ReyLucky2025"}
    }
-})
-
 -- Tabs
 local MainTab = Window:CreateTab("Main", nil)
 local AutoFarmTab = Window:CreateTab("Auto Farm", nil)
