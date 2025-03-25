@@ -27,6 +27,10 @@ local MainSection = MainTab:CreateSection("Main Features")
 local AutoFarmTab = Window:CreateTab("Auto Farm", nil)
 local AutoFarmSection = AutoFarmTab:CreateSection("Auto Farm Features")
 
+-- === SPEED HACK SECTION ===
+local SpeedTab = Window:CreateTab("Speed", nil)
+local SpeedSection = SpeedTab:CreateSection("Speed Hack Features")
+
 -- Auto Shoot
 local ToggleAutoShoot = MainTab:CreateToggle({
    Name = "Auto Shoot",
@@ -483,10 +487,6 @@ local ToggleAutoGoal = AutoFarmTab:CreateToggle({
         end
     end
 })
--- === SPEED HACK SECTION ===
-local SpeedTab = Window:CreateTab("Speed", nil)
-local SpeedSection = SpeedTab:CreateSection("Speed Hack Features")
-
 -- Speed Hack Toggle
 local ToggleSpeedHack = SpeedTab:CreateToggle({
     Name = "Speed Hack",
