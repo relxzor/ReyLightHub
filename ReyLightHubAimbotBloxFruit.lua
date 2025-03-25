@@ -18,42 +18,24 @@ local Window = Rayfield:CreateWindow({
    KeySystem = false
 })
 
--- === FUNGSI RGB ANIMATION ===
-local function startRGBEffect(uiElement)
-    spawn(function()
-        while true do
-            for i = 0, 1, 0.01 do
-                local color = Color3.fromHSV(i, 1, 1)
-                local tweenInfo = TweenInfo.new(0.15, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
-                local tween = TweenService:Create(uiElement, tweenInfo, {BackgroundColor3 = color})
-                tween:Play()
-                wait(0.1)
-            end
-        end
-    end)
-end
-
--- === GUNAKAN RGB PADA WINDOW ===
-startRGBEffect(Window)
-
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
 local Camera = game.Workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 
--- === TAB AIMBOT ===
-local MainTab = Window:CreateTab("Aimbot", nil)
-local MainSection = MainTab:CreateSection("Aimbot Features")
+-- === AIMBOT TAB ===
+local MainTab = Window:CreateTab("Main", nil)
+local MainSection = MainTab:CreateSection("Main Features")
 
--- === VARIABEL AIMBOT ===
+-- === AIMBOT VARIABLES ===
 _G.AimbotEnabled = false
-_G.AimbotMode = "None" -- "Blatant" atau "Non-Blatant"
+_G.AimbotMode = "None" -- "Blatant" or "Non-Blatant"
 _G.TargetPlayer = nil
 _G.AIMBOT_SMOOTHNESS = 5
 _G.AIMBOT_FOV = 150
+_G.ESPEnabled = false
 
--- === DROPDOWN UNTUK PILIH TARGET ===
+-- === DROPDOWN TO SELECT TARGET ===
 local TargetDropdown = MainTab:CreateDropdown({
     Name = "Choose Target",
     Options = {},
@@ -64,7 +46,7 @@ local TargetDropdown = MainTab:CreateDropdown({
     end
 })
 
--- Fungsi untuk kemaskini senarai pemain dalam dropdown
+-- Function to update player list in dropdown
 local function updatePlayerList()
     local playerNames = {}
     for _, player in pairs(Players:GetPlayers()) do
@@ -75,14 +57,38 @@ local function updatePlayerList()
     TargetDropdown:Refresh(playerNames, nil)
 end
 
--- Kemaskini senarai pemain setiap 3 saat supaya lebih responsif
+-- Update player list every 3 seconds for responsiveness
 spawn(function()
     while wait(3) do
         updatePlayerList()
     end
 end)
 
--- === TOGGLE AIMBOT BLATANT ===
+-- === FUNCTION TO FIND SELECTED TARGET ===
+local function getSelectedPlayer()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Name == _G.TargetPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            return player.Character.HumanoidRootPart
+        end
+    end
+    return nil
+end
+
+-- === AIMBOT TOGGLE ===
+MainTab:CreateToggle({
+   Name = "Aimbot Non-Blatant",
+   CurrentValue = false,
+   Flag = "AimbotNonBlatant",
+   Callback = function(Value)
+       _G.AimbotEnabled = Value
+       if Value then
+           _G.AimbotMode = "Non-Blatant"
+       else
+           _G.AimbotMode = "None"
+       end
+   end
+})
+
 MainTab:CreateToggle({
    Name = "Aimbot Blatant",
    CurrentValue = false,
@@ -97,73 +103,88 @@ MainTab:CreateToggle({
    end
 })
 
--- === TOGGLE AIMBOT NON BLATANT ===
+-- === TELEPORT FUNCTION ===
+local function teleportToPlayer()
+    local target = getSelectedPlayer()
+    if target then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = target.CFrame
+    end
+end
+
+-- === TELEPORT BUTTON ===
+MainTab:CreateButton({
+    Name = "Teleport to Target",
+    Callback = function()
+        teleportToPlayer()
+    end
+})
+
+-- === ESP WALLHACK FUNCTION ===
+local function createESP(player)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        for _, part in pairs(player.Character:GetChildren()) do
+            if part:IsA("BasePart") and not part:FindFirstChild("ESPBox") then
+                local esp = Instance.new("BoxHandleAdornment")
+                esp.Name = "ESPBox"
+                esp.Adornee = part
+                esp.AlwaysOnTop = true
+                esp.ZIndex = 5
+                esp.Size = part.Size
+                esp.Color3 = Color3.fromRGB(math.random(0, 255), math.random(0, 255), math.random(0, 255))
+                esp.Transparency = 0.3
+                esp.Parent = part
+            end
+        end
+    end
+end
+
+local function enableESP()
+    while _G.ESPEnabled do
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                createESP(player)
+            end
+        end
+        wait(1)
+    end
+end
+
 MainTab:CreateToggle({
-   Name = "Aimbot Non Blatant",
+   Name = "Enable ESP Wallhack",
    CurrentValue = false,
-   Flag = "AimbotNonBlatant",
+   Flag = "ESPWallhack",
    Callback = function(Value)
-       _G.AimbotEnabled = Value
+       _G.ESPEnabled = Value
        if Value then
-           _G.AimbotMode = "Non-Blatant"
+           spawn(enableESP)
        else
-           _G.AimbotMode = "None"
+           for _, player in pairs(Players:GetPlayers()) do
+               if player.Character then
+                   for _, part in pairs(player.Character:GetChildren()) do
+                       if part:IsA("BasePart") then
+                           local esp = part:FindFirstChild("ESPBox")
+                           if esp then
+                               esp:Destroy()
+                           end
+                       end
+                   end
+               end
+           end
        end
    end
 })
 
--- Fungsi untuk cari pemain terdekat dalam FOV (untuk Non-Blatant)
-local function getClosestPlayer()
-    local closestPlayer = nil
-    local shortestDistance = _G.AIMBOT_FOV  
-
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local rootPart = player.Character.HumanoidRootPart
-            local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
-            
-            if onScreen then
-                local distance = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).magnitude
-                
-                if distance < shortestDistance then
-                    shortestDistance = distance
-                    closestPlayer = rootPart
-                end
-            end
-        end
-    end
-
-    return closestPlayer
-end
-
--- Fungsi smooth aim (untuk Non-Blatant)
-local function smoothAim(targetPos)
-    local currentMousePos = Vector2.new(Mouse.X, Mouse.Y)
-    local targetMousePos = Vector2.new(targetPos.X, targetPos.Y)
-    
-    local moveVector = (targetMousePos - currentMousePos) / _G.AIMBOT_SMOOTHNESS
-    mousemoverel(moveVector.X, moveVector.Y) -- Pastikan exploit menyokong ini
-end
-
--- === FUNGSI AIMBOT ===
+-- === AIMBOT FOR MOBILE ===
 RunService.RenderStepped:Connect(function()
     if _G.AimbotEnabled then
-        if _G.AimbotMode == "Blatant" and _G.TargetPlayer then
-            -- Aimbot Blatant: Lock terus ke target
-            local targetPlayer = Players:FindFirstChild(_G.TargetPlayer)
-            if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local rootPart = targetPlayer.Character.HumanoidRootPart
-                local targetPosition = Camera:WorldToViewportPoint(rootPart.Position)
-                local moveX = (targetPosition.X - Mouse.X) / _G.AIMBOT_SMOOTHNESS
-                local moveY = (targetPosition.Y - Mouse.Y) / _G.AIMBOT_SMOOTHNESS
-                mousemoverel(moveX, moveY)
-            end
-        elseif _G.AimbotMode == "Non-Blatant" then
-            -- Aimbot Non-Blatant: Cari target dalam FOV dan aim perlahan
-            local target = getClosestPlayer()
-            if target then
-                local targetPosition = Camera:WorldToViewportPoint(target.Position)
-                smoothAim(targetPosition)
+        local target = getSelectedPlayer()
+        if target then
+            if _G.AimbotMode == "Blatant" then
+                -- **BLATANT AIMBOT: FULL LOCK ON TARGET**
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+            elseif _G.AimbotMode == "Non-Blatant" then
+                -- **NON-BLATANT AIMBOT: SMOOTH AIM**
+                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Position), _G.AIMBOT_SMOOTHNESS / 100)
             end
         end
     end
