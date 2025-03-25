@@ -10,12 +10,19 @@ local Window = Rayfield:CreateWindow({
       FolderName = "ReyLightHub",
       FileName = "Config"
    },
-   Discord = {
       Enabled = false,
-      Invite = "b9NuzjaRtv",
-      RememberJoins = true
+      Invite = "https://b9NuzjaRtv", -- Kod jemputan Discord tanpa 'discord.gg/'
+      RememberJoins = true -- Jika false, pemain perlu menyertai semula setiap kali skrip dimuatkan
    },
-   KeySystem = false
+   KeySystem = true, -- Aktifkan sistem kunci
+   KeySettings = {
+      Title = "Key | ReyLightHub",
+      Subtitle = "Key System",
+      Note = "Key In Discord Server (https://discord.gg/b9NuzjaRtv",
+      FileName = "ReyHubKey1", -- Pastikan nama fail unik supaya tidak ditimpa oleh skrip lain
+      SaveKey = false, -- Jika false, pemain perlu memasukkan semula kunci jika ia berubah
+      Key = {"eX512011"} -- Senarai kunci yang diterima
+   }
 })
 
 local Players = game:GetService("Players")
