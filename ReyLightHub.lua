@@ -166,7 +166,7 @@ local ToggleBallESP = ESPTab:CreateToggle({
        _G.BallESP = Value
        while _G.BallESP do
            wait(0.1)
-           local ball = workspace:FindFirstChild("Ball")
+           local ball = workspace:FindFirstChild("Football")
 
            if ball then
                local highlight = ball:FindFirstChild("ESP") or Instance.new("Highlight")
@@ -298,52 +298,82 @@ local ToggleLegendaryProtection = StylesTab:CreateToggle({
 
 local ToggleAutoGK = AutoFarmTab:CreateToggle({
     Name = "Auto GK",
-    CurrentValue = false,
-    Flag = "AutoGK",
-    Callback = function(Value)
-        _G.AutoGK = Value
-        if _G.AutoGK then
-            task.spawn(function()
-                while _G.AutoGK do
-                    task.wait(0.1)
-                    local player = game.Players.LocalPlayer
-                    local character = player.Character or player.CharacterAdded:Wait()
-                    local humanoid = character:FindFirstChild("Humanoid")
-                    local rootPart = character:FindFirstChild("HumanoidRootPart")
-                    local ball = game.Workspace:FindFirstChild("Football")
+CurrentValue = false,
+Flag = "AutoGK",
+Callback = function(Value)
+    _G.AutoGK = Value
+    if _G.AutoGK then
+        task.spawn(function()
+            while _G.AutoGK do
+                task.wait(0.03) -- **Kurangkan delay untuk reaksi lebih pantas**
+                local player = game.Players.LocalPlayer
+                local character = player.Character or player.CharacterAdded:Wait()
+                local humanoid = character:FindFirstChild("Humanoid")
+                local rootPart = character:FindFirstChild("HumanoidRootPart")
+                local ball = game.Workspace:FindFirstChild("Football")
 
-                    -- **Pastikan toggle masih hidup, jika tidak hentikan loop**
-                    if not _G.AutoGK then break end
+                if not _G.AutoGK then break end
 
-                    if ball and rootPart and humanoid then
-                        rootPart.CFrame = CFrame.lookAt(rootPart.Position, ball.Position)
+                if ball and rootPart and humanoid then
+                    rootPart.CFrame = CFrame.lookAt(rootPart.Position, ball.Position)
 
-                        local myGoal = game.Workspace.AI.Home.DiveBox.Position
-                        if (ball.Position - myGoal).Magnitude < 40 then
+                    local myGoal = game.Workspace.AI.Home.DiveBox.Position
+                    local ballDistance = (ball.Position - myGoal).Magnitude
+                    local ballSpeed = ball.AssemblyLinearVelocity.Magnitude
+
+                    -- **Tentukan jika bola dalam zon bahaya**
+                    local dangerZone = ballDistance < 60 and ballSpeed > 5
+                    local criticalZone = ballDistance < 40 or ballSpeed > 10
+
+                    if criticalZone then
+                        -- **Boost teleport jika bola terlalu laju ke arah gol**
+                        if ballSpeed > 15 then
+                            rootPart.CFrame = CFrame.new(ball.Position + Vector3.new(0, 5, 0))
+                        else
                             rootPart.CFrame = CFrame.new(ball.Position + Vector3.new(0, 3, 0))
-                            humanoid.JumpPower = 0
-                            humanoid:Move(Vector3.new(0, -10, 0))
+                        end
 
-                            -- **Hentikan bola jika toggle masih hidup**
-                            if _G.AutoGK then
-                                ball.AssemblyLinearVelocity = Vector3.zero
-                                ball.AssemblyAngularVelocity = Vector3.zero
-                                ball.Velocity = Vector3.zero
-                                ball.RotVelocity = Vector3.zero
-                                ball.Anchored = true
-                                task.wait(0.1)
-                                ball.Anchored = false
+                        humanoid.JumpPower = 0
+                        humanoid:Move(Vector3.new(0, -10, 0))
+
+                        -- **Bekukan bola sepenuhnya**
+                        if _G.AutoGK then
+                            ball.AssemblyLinearVelocity = Vector3.zero
+                            ball.AssemblyAngularVelocity = Vector3.zero
+                            ball.Velocity = Vector3.zero
+                            ball.RotVelocity = Vector3.zero
+                            ball.Anchored = true
+                            task.wait(0.1)
+                            ball.Anchored = false
+                        end
+
+                        -- **Tolak bola jauh dari gol**
+                        local direction = (ball.Position - myGoal).Unit * 120
+                        ball.AssemblyLinearVelocity = direction
+
+                        task.wait(0.5)
+                        humanoid.JumpPower = 50
+                    end
+
+                    -- **Blok lawan yang dekat dengan bola**
+                    for _, opponent in pairs(game.Players:GetPlayers()) do
+                        if opponent ~= player and opponent.Team ~= player.Team then
+                            local enemyCharacter = opponent.Character
+                            if enemyCharacter then
+                                local enemyRoot = enemyCharacter:FindFirstChild("HumanoidRootPart")
+                                if enemyRoot and (enemyRoot.Position - ball.Position).Magnitude < 10 then
+                                    -- **Tolak lawan jauh dari bola**
+                                    local pushDirection = (enemyRoot.Position - ball.Position).Unit * 80
+                                    enemyRoot.AssemblyLinearVelocity = pushDirection
+                                end
                             end
-
-                            task.wait(0.5)
-                            humanoid.JumpPower = 50
                         end
                     end
                 end
-            end)
-        end
+            end
+        end)
     end
-})
+      end
 
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -458,6 +488,43 @@ local ToggleAutoGoal = AutoFarmTab:CreateToggle({
         end
     end
 })
+-- === SPEED HACK SECTION ===
+local SpeedTab = Window:CreateTab("Speed", nil)
+local SpeedSection = SpeedTab:CreateSection("Speed Hack Features")
 
+-- Speed Hack Toggle
+local ToggleSpeedHack = SpeedTab:CreateToggle({
+    Name = "Speed Hack",
+    CurrentValue = false,
+    Flag = "SpeedHack",
+    Callback = function(Value)
+        _G.SpeedHack = Value
+        if _G.SpeedHack then
+            local player = game.Players.LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+
+            while _G.SpeedHack do
+                task.wait(0.02) -- Delay kecil untuk kelancaran
+                if humanoidRootPart then
+                    humanoidRootPart.CFrame = humanoidRootPart.CFrame + humanoidRootPart.CFrame.LookVector * _G.SpeedMultiplier
+                end
+            end
+        end
+    end
+})
+
+-- Speed Multiplier Slider
+local SliderSpeedMultiplier = SpeedTab:CreateSlider({
+    Name = "Speed Multiplier",
+    Min = 1,
+    Max = 50,
+    Increment = 1,
+    CurrentValue = 10,
+    Flag = "SpeedMultiplier",
+    Callback = function(Value)
+        _G.SpeedMultiplier = Value
+    end
+})
 -- === SHOW WINDOW ===
 Window:Show()
