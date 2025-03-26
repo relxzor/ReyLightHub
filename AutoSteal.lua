@@ -13,7 +13,7 @@ local Window = Rayfield:CreateWindow({
     KeySettings = {
         Title = "Key | ReyLightHub",
         Subtitle = "Key System",
-        Note = "Key In Discord Server (https://discord.gg/b9NuzjaRtv)",
+        Note = "Key available in Discord Server (https://discord.gg/b9NuzjaRtv)",
         FileName = "ReyHubKey1",
         SaveKey = false,
         Key = {"ReyHitBox512011"}
@@ -25,10 +25,10 @@ local MainTab = Window:CreateTab("Main", nil)
 local MainSection = MainTab:CreateSection("Main Features")
 
 local hitboxEnabled = false
-local hitboxSize = Vector3.new(12, 12, 12) -- Besarkan hitbox musuh
-local ballSize = Vector3.new(15, 15, 15) -- Besarkan bola
+local hitboxSize = Vector3.new(12, 12, 12) -- Increase enemy hitbox size
+local ballSize = Vector3.new(15, 15, 15) -- Increase football size
 
--- Fungsi untuk mengubah saiz hitbox pemain lawan
+-- Function to modify opponent's hitbox size
 local function updateHitboxes()
     for _, player in pairs(game.Players:GetPlayers()) do
         if player ~= game.Players.LocalPlayer and player.Character then
@@ -42,7 +42,7 @@ local function updateHitboxes()
     end
 end
 
--- Fungsi untuk mengubah saiz bola di padang
+-- Function to modify football size on the field
 local function updateFootballSize()
     for _, obj in pairs(workspace:GetChildren()) do
         if obj:IsA("Part") and obj.Name:lower():find("football") then
@@ -53,14 +53,26 @@ local function updateFootballSize()
     end
 end
 
--- Fungsi utama untuk toggle
+-- Main function to toggle hitbox and ball size
 local function toggleFeatures()
     hitboxEnabled = not hitboxEnabled
     updateHitboxes()
     updateFootballSize()
 end
 
--- UI Button (Mudah Alih)
+-- Toggle button inside Main Tab
+MainTab:CreateToggle({
+    Name = "Enable Hitbox",
+    CurrentValue = false,
+    Flag = "HitboxToggle",
+    Callback = function(value)
+        hitboxEnabled = value
+        updateHitboxes()
+        updateFootballSize()
+    end
+})
+
+-- Mobile UI Button (Separate from Main Tab)
 local toggleButton = Instance.new("TextButton")
 toggleButton.Parent = game.CoreGui
 toggleButton.Size = UDim2.new(0, 120, 0, 50)
@@ -71,7 +83,7 @@ toggleButton.TextScaled = true
 toggleButton.TextColor3 = Color3.new(1, 1, 1)
 toggleButton.MouseButton1Click:Connect(toggleFeatures)
 
--- Auto-expand hitbox apabila pemain baru masuk
+-- Auto-update hitbox when new players join
 game.Players.PlayerAdded:Connect(function(player)
     player.CharacterAdded:Connect(function()
         task.wait(1)
@@ -79,7 +91,7 @@ game.Players.PlayerAdded:Connect(function(player)
     end)
 end)
 
--- Auto-expand bola apabila objek bola baru dimasukkan
+-- Auto-update football size when a new football appears
 workspace.ChildAdded:Connect(function(obj)
     if obj:IsA("Part") and obj.Name:lower():find("football") then
         task.wait(1)
