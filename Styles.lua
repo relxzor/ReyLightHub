@@ -122,28 +122,46 @@ MainTab:CreateToggle({
     end
 })
 
--- === TOGGLE REJOIN SERVER ===
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+
+local function RejoinServer()
+    local player = Players.LocalPlayer
+    local servers = {}  -- Simpan senarai ID pelayan
+
+    -- Dapatkan senarai pelayan (memerlukan HttpService jika executor menyokong)
+    local HttpService = game:GetService("HttpService")
+    local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+    
+    local success, result = pcall(function()
+        return HttpService:GetAsync(url)
+    end)
+
+    if success then
+        local data = HttpService:JSONDecode(result)
+        for _, server in pairs(data.data) do
+            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                table.insert(servers, server.id)
+            end
+        end
+    end
+
+    -- Jika ada pelayan yang tersedia, teleport pemain ke pelayan lain
+    if #servers > 0 then
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)], player)
+    else
+        TeleportService:Teleport(game.PlaceId, player) -- Jika tiada, rejoin pelayan sekarang
+    end
+end
+
+-- Buat toggle untuk rejoin
 MainTab:CreateToggle({
     Name = "Rejoin Server",
     Default = false,
     Callback = function(value)
-        autoRejoin = value
-    end
-})
-
--- Auto Rejoin Server Function
-local function rejoinServer()
-    if autoRejoin then
-        local TeleportService = game:GetService("TeleportService")
-        TeleportService:Teleport(game.PlaceId, game.Players.LocalPlayer)
-    end
-end
-
--- Rejoin Button
-MainTab:CreateButton({
-    Name = "Rejoin Server",
-    Callback = function()
-        rejoinServer()
+        if value then
+            RejoinServer()
+        end
     end
 })
 
